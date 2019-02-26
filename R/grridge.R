@@ -187,7 +187,8 @@ grridge <- function(highdimdata, response, partitions, unpenal = ~1,
   allpreds <- c()
   whsam <- 1:nsam
   responsemin <- response0
-  pen0 <- penalized(responsemin, penalized = XM0, lambda2 = optl, unpenalized=nopen,data=cbind(XM0,datapred))
+  pen0 <- penalized(responsemin, penalized = XM0, lambda2 = optl, unpenalized=nopen,data=cbind(XM0,datapred),
+                    trace=trace)
   nmunpen <- names(pen0@unpenalized)
   if(is.element("(Intercept)",nmunpen)) addintercept <- TRUE else addintercept <- FALSE 
   if(is.null(innfold)) {nf <- nrow(XM0)} else {
@@ -483,7 +484,7 @@ grridge <- function(highdimdata, response, partitions, unpenal = ~1,
         if(trace) print(cvln1)
         
         if((cvln1 - cvlnprev)/abs(cvlnprev) > 1/100  |  ((cvln1 - cvlnprev)/abs(cvlnprev) >= 0 & i==1)){ 
-          pen <- penalized(responsemin, penalized = XMw0, 
+          pen <- penalized(responsemin, penalized = XMw0, trace=trace,
                            lambda2 = optl,unpenalized=nopen,data=datapred)
           if(niter>1){
             if(!overl){
@@ -643,7 +644,8 @@ if(model=="survival"){
   if(trace) print("Starting unpenalized Cox-model")
   bogus <- matrix(rnorm(nsam),ncol=1)
   if(trace) print(dim(datapred))
-  penlambdas0 <- penalized(response,penalized = bogus,unpenalized = nopen,lambda1=0,lambda2=10^8, data=datapred) 
+  penlambdas0 <- penalized(response,penalized = bogus,unpenalized = nopen,lambda1=0,lambda2=10^8, data=datapred,
+                           trace=trace) 
   predobj <- c(predobj,penlambdas0)
 } else {
 if(model == "logistic") famglm <- "binomial" else famglm <- "gaussian"
@@ -669,7 +671,7 @@ predobj <- predobj[length(predobj)]
 almvecall <- matrix(lmvecall,ncol=1)
 }
 if(savepredobj=="none") predobj <- NULL
-cat("\n")
+if(trace) cat("\n")
 return(list(true=response,cvfit = cvlnstot,lambdamults = lambdas, optl=optl, lambdamultvec = almvecall, 
             predobj=predobj,betas=newbeta, reslasso=reslasso, 
             resEN = resEN, model=model, arguments=arguments,allpreds=allpreds))
