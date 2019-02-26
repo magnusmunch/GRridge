@@ -171,7 +171,7 @@ grridge <- function(highdimdata, response, partitions, unpenal = ~1,
     if(fixedfoldsinn) set.seed(346477)
     opt <- optL2(response, penalized = t(highdimdata),fold=foldinit,unpenalized=nopen,data=datapred,trace=trace)
     time1 <- proc.time()-pmt0
-    print(opt$cv)
+    if(trace) print(opt$cv)
     if(trace) print(paste("Computation time for cross-validating main penalty parameter:",time1[3]))
     optl <- opt$lambda
     if(trace) print(paste("lambda2",optl))
