@@ -22,18 +22,18 @@ grridge <- function(highdimdata, response, partitions, unpenal = ~1,
       return(NULL)
     } else {
       model = "logistic"
-      print("Binary response, executing logistic ridge regression")
+      if(trace) print("Binary response, executing logistic ridge regression")
       lev <- levels(response)
-      print(paste("Predicting probability on factor level",lev[2]))
+      if(trace) print(paste("Predicting probability on factor level",lev[2]))
     }} else {
       if(class(response) == "numeric" | class(response)=="integer"){
         valresp <- sort(unique(response)) 
         if(length(valresp)==2 & valresp[1]==0 & valresp[2]==1) {
           model = "logistic"
-          print("Binary response, executing logistic ridge regression")
+          if(trace) print("Binary response, executing logistic ridge regression")
         } else {
           model = "linear"
-          print("Numeric continuous response, executing linear ridge regression")
+          if(trace) print("Numeric continuous response, executing linear ridge regression")
           return(.grridgelin(highdimdata=highdimdata, response=response,partitions= partitions, unpenal=unpenal,
                              offset=offset, method=method, niter=niter, monotone=monotone, optl=optl, innfold=innfold, 
                              fixedfoldsinn=fixedfoldsinn, maxsel=maxsel,selectionEN=selectionEN,cvlmarg=cvlmarg,
@@ -45,7 +45,7 @@ grridge <- function(highdimdata, response, partitions, unpenal = ~1,
       } else {
         if(class(response) == "Surv"){
           model="survival"
-          print("Survival response, executing cox ridge regression")
+          if(trace) print("Survival response, executing cox ridge regression")
         } else {
           print("Non-valid response. Should be binary, numeric or survival.")
           return(NULL)
@@ -54,7 +54,7 @@ grridge <- function(highdimdata, response, partitions, unpenal = ~1,
     }
   
   if(standardizeX) {
-    print("Covariates are standardized")
+    if(trace) print("Covariates are standardized")
     sds <- apply(highdimdata,1,sd)
     sds2 <- sapply(sds,function(x) max(x,10^{-5}))
     highdimdata <- (highdimdata-apply(highdimdata,1,mean))/sds2
@@ -98,7 +98,7 @@ grridge <- function(highdimdata, response, partitions, unpenal = ~1,
     nfeatcl <- length(unique(indexset))
     nfeattot <- c(nfeattot,nfeatcl)
     if(length(indexset) > nfeatcl){
-      print(paste("Grouping",ncl,"contains overlapping groups"))
+      if(trace) print(paste("Grouping",ncl,"contains overlapping groups"))
       overlap <- c(overlap,TRUE)
       whgroup <- partitions[[ncl]]
       nover <- rep(0,nr)
@@ -108,7 +108,7 @@ grridge <- function(highdimdata, response, partitions, unpenal = ~1,
       }
       Wmat <- cbind(Wmat,sqrt(1/nover))
     } else {
-      print(paste("Grouping",ncl,"contains mutually exclusive groups"))
+      if(trace) print(paste("Grouping",ncl,"contains mutually exclusive groups"))
       overlap <- c(overlap,FALSE)  
       Wmat <- cbind(Wmat,rep(1,nr))
     }
@@ -167,14 +167,14 @@ grridge <- function(highdimdata, response, partitions, unpenal = ~1,
   pmt0<- proc.time()
   optl0 <- optl
   if(is.null(optl)){
-    print("Finding lambda for initial ridge regression")
+    if(trace) print("Finding lambda for initial ridge regression")
     if(fixedfoldsinn) set.seed(346477)
     opt <- optL2(response, penalized = t(highdimdata),fold=foldinit,unpenalized=nopen,data=datapred,trace=trace)
     time1 <- proc.time()-pmt0
     print(opt$cv)
-    print(paste("Computation time for cross-validating main penalty parameter:",time1[3]))
+    if(trace) print(paste("Computation time for cross-validating main penalty parameter:",time1[3]))
     optl <- opt$lambda
-    print(paste("lambda2",optl))
+    if(trace) print(paste("lambda2",optl))
     arguments$optl <- optl
   }
   pmt <- proc.time()
@@ -203,7 +203,7 @@ grridge <- function(highdimdata, response, partitions, unpenal = ~1,
   cvlnprev <- cvln0
   penprev <- pen0
   pen <- pen0
-  print(cvln0)
+  if(trace) print(cvln0)
   XMw0 <- XM0
   XMw0prev <- XM0
   converged <- FALSE
@@ -303,7 +303,7 @@ grridge <- function(highdimdata, response, partitions, unpenal = ~1,
         ellarg0 <- length(leftside[leftside>lowerleft])/length(leftside)
         
          if(ellarg0 <=.5){ 
-           print(paste("Partition",nmp0[cl],"NOT ITERATED")) 
+           if(trace) print(paste("Partition",nmp0[cl],"NOT ITERATED")) 
            conv[cl] <- TRUE
            cvln1 <- cvlnprev
            XMw0 <- XMw0prev
@@ -325,8 +325,8 @@ grridge <- function(highdimdata, response, partitions, unpenal = ~1,
         means <- apply(leftsran,1,mean)
         leftsrancen <- t(t(leftsran)-means)
         relerror <- sum(abs(leftsrancen))/(nlefts*sum(abs(means)))
-        if(cl==1 & i==1) print(cvln0)
-        print(paste("Relative error:",relerror))  
+        if(cl==1 & i==1) if(trace) print(cvln0)
+        if(trace) print(paste("Relative error:",relerror))  
         if(relerror>= 0.1) print("WARNING: large relative error (>=0.1). Consider using larger groups of variable.")
         nadd <- ncol(XMW) - ncol(XMw0)
         
@@ -365,7 +365,7 @@ grridge <- function(highdimdata, response, partitions, unpenal = ~1,
         if(relerror<=0.1){
           lam <- lams[which(CNsRanre<=0.1)[1]]
         } else lam <- 1
-        print(paste("Shrink Factor coefficient matrix",lam))
+        if(trace) print(paste("Shrink Factor coefficient matrix",lam))
         cfmmat <- coefmatfast;
         ng <- nrow(cfmmat)
         dmax <- max(diag(cfmmat))
@@ -406,25 +406,25 @@ grridge <- function(highdimdata, response, partitions, unpenal = ~1,
         if(method=="simple"){
           solsim = leftside
           tausqest <- solsim
-          print("simple")
+          if(trace) print("simple")
         }
         
         if(method=="exact") {
           tausqest <- tausqest0
-          print("exact")
+          if(trace) print("exact")
         }
         
         if(method=="exactstable") {
           tausqest <- tausqest0
-          print("exactstable")
+          if(trace) print("exactstable")
         }
         if(method=="stable") {
-          print("stable")
+          if(trace) print("stable")
           tausqest <- solhyb
         } 
         
         if(method=="adaptridge") {
-          print("adaptive ridge")
+          if(trace) print("adaptive ridge")
         } 
         
         if(method=="stable" | method=="exact" | method=="exactstable" | method=="simple"){
@@ -443,7 +443,7 @@ grridge <- function(highdimdata, response, partitions, unpenal = ~1,
             con3 <- sum(sapply(1:length(whgr),function(gr){return(length(whgr[[gr]])*tausqest[gr])}))
             tausqestcal<-  nfeatcl/con3*tausqest
             lambdamult <- 1/tausqestcal
-            print(lambdamult)
+            if(trace) print(lambdamult)
             
             for(k in 1:length(whgr)){
               wh <- whgr[[k]]
@@ -462,7 +462,7 @@ grridge <- function(highdimdata, response, partitions, unpenal = ~1,
             
             tausqestcal0<-  nfeatcl/con3*tausqest
             lambdamult <- 1/tausqestcal0
-            print(lambdamult)
+            if(trace) print(lambdamult)
             
             tausqestcal<-  (nfeatcl/con3)*tauk
             lambdamultperk <- 1/tausqestcal
@@ -480,7 +480,7 @@ grridge <- function(highdimdata, response, partitions, unpenal = ~1,
         opt2w <- cvl(responsemin, penalized = XMw0,fold=nf,lambda2=optl,
                      unpenalized=nopen,data=datapred, trace=trace)
         cvln1 <- opt2w$cvl
-        print(cvln1)
+        if(trace) print(cvln1)
         
         if((cvln1 - cvlnprev)/abs(cvlnprev) > 1/100  |  ((cvln1 - cvlnprev)/abs(cvlnprev) >= 0 & i==1)){ 
           pen <- penalized(responsemin, penalized = XMw0, 
@@ -498,10 +498,10 @@ grridge <- function(highdimdata, response, partitions, unpenal = ~1,
           cvlnprev <- cvln1
           penprev <- pen
           XMw0prev <- XMw0
-          print(paste("Partition",nmp0[cl],"improved results"))
+          if(trace) print(paste("Partition",nmp0[cl],"improved results"))
         } else {
-          if(niter>1) print(paste("Partition",nmp0[cl],"CONVERGED after",i,"iterations")) 
-          else print(paste("Partition",nmp0[cl],"did not improve results"))
+          if(niter>1) if(trace) print(paste("Partition",nmp0[cl],"CONVERGED after",i,"iterations")) 
+          else if(trace) print(paste("Partition",nmp0[cl],"did not improve results"))
           
           conv[cl] <- TRUE
           cvln1 <- cvlnprev
@@ -514,7 +514,7 @@ grridge <- function(highdimdata, response, partitions, unpenal = ~1,
     }
     if(sum(conv)==nclass){
       converged <- TRUE
-      if(niter>1) print(paste("All partitions CONVERGED after",i,"iterations"))
+      if(niter>1) if(trace) print(paste("All partitions CONVERGED after",i,"iterations"))
     }
     i <- i+1
   }
@@ -543,7 +543,7 @@ lambs <- lmvecall
 oldbeta <- pred2@penalized
 newbeta <- oldbeta/sqrt(lambs)
 time2 <- proc.time()-pmt
-print(paste("Computation time for adaptive weigthing:",time2[3]))
+if(trace) print(paste("Computation time for adaptive weigthing:",time2[3]))
 
 
 
@@ -580,16 +580,16 @@ if(comparelasso){
   }
   X0 <- cbind(t(highdimdata),mm) 
   if(is.null(offset)) offset <- rep(0,nsam)
-  print("Starting lasso by glmnet")
+  if(trace) print("Starting lasso by glmnet")
   if(is.null(optllasso)){
-    print("Finding lambda for lasso regression")
+    if(trace) print("Finding lambda for lasso regression")
     if(fixedfoldsinn) set.seed(346477)
     #alpha=1 implies lasso  
     opt <- cv.glmnet(x=X0,y=response,offset=offset,foldid=nf,penalty.factor=pf,alpha=1,family=fam,
                      intercept=interc) 
     optllasso <- opt$lambda.min
     whmin <- which(opt$lambda==optllasso)
-    print(paste("lambda1 (multiplied by N):",optllasso*nsam))
+    if(trace) print(paste("lambda1 (multiplied by N):",optllasso*nsam))
     arguments$optllasso <- optllasso
     cvliklasso <- opt$cvm[whmin]
   } else {
@@ -605,16 +605,16 @@ if(comparelasso){
   betaslasso <- betaspenalizedlasso[whichlasso]
   predobj <- c(predobj,list(penlasso))
   reslasso <- list(cvllasso=cvliklasso,whichlasso=whichlasso,betaslasso=betaslasso)
-  print(paste("lasso uses",length(whichlasso),"penalized variables"))
+  if(trace) print(paste("lasso uses",length(whichlasso),"penalized variables"))
 }
 
 resEN <- list()
 #one cannot select more than the nr of variables
 if(selectionEN){
-  print("Variable selection by elastic net started...")  
+  if(trace) print("Variable selection by elastic net started...")  
   for(maxsel0 in maxsel){
     maxsel2 <- min(maxsel0,nr)
-  print(paste("Maximum nr of variables",maxsel2))
+    if(trace) print(paste("Maximum nr of variables",maxsel2))
   fsel <- function(lam1,maxselec=maxsel2,lam2){
     if(lam1==0) return(nfeat-maxselec) else {
       penselEN <- penalized(responsemin,XMw0,lambda1=lam1,lambda2=lam2, 
@@ -640,14 +640,14 @@ if(selectionEN){
 
 if(compareunpenal){
 if(model=="survival"){
-  print("Starting unpenalized Cox-model")
+  if(trace) print("Starting unpenalized Cox-model")
   bogus <- matrix(rnorm(nsam),ncol=1)
-  print(dim(datapred))
+  if(trace) print(dim(datapred))
   penlambdas0 <- penalized(response,penalized = bogus,unpenalized = nopen,lambda1=0,lambda2=10^8, data=datapred) 
   predobj <- c(predobj,penlambdas0)
 } else {
 if(model == "logistic") famglm <- "binomial" else famglm <- "gaussian"
-print("Starting unpenalized glm")
+if(trace) print("Starting unpenalized glm")
 form <- formula(paste("response","~",as.character(unpenal)[2]))
 modelglm <- glm(form,family=famglm,data=dataunpen)
 predobj <- c(predobj,list(modelglm))
@@ -657,11 +657,11 @@ predobj <- c(predobj,list(modelglm))
 printlam <- function(lambs) {if(length(lambs)<=10) return(lambs) else return(summary(lambs))}
 
 suml <- lapply(lambdas,printlam)
-print("Final lambda multipliers (summary):")
-print(suml)
-print(paste("CVLs",cvlnstot))
+if(trace) print("Final lambda multipliers (summary):")
+if(trace) print(suml)
+if(trace) print(paste("CVLs",cvlnstot))
 timetot <- proc.time()-pmt0
-print(paste("Total computation time:",timetot[3]))
+if(trace) print(paste("Total computation time:",timetot[3]))
 names(predobj) <- nmp
 colnames(almvecall) <- nmpweight
 if(savepredobj=="last") {
