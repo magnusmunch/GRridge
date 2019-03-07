@@ -175,6 +175,10 @@ grridge <- function(highdimdata, response, partitions, unpenal = ~1,
     if(trace) print(paste("Computation time for cross-validating main penalty parameter:",time1[3]))
     optl <- opt$lambda
     if(trace) print(paste("lambda2",optl))
+    if(is.infinite(optl)) {
+      if(trace) print("Infinite penalty returned. Data contains no signal. Penalty set to 10^10 ")
+      optl <- 10^10
+    }
     arguments$optl <- optl
   }
   pmt <- proc.time()
